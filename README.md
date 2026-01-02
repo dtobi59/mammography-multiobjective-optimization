@@ -88,9 +88,21 @@ This project implements a complete methodology for optimizing a ResNet-50 model 
 
 ## Installation
 
+### Quick Install
+
 ```bash
+# Clone the repository
+git clone https://github.com/dtobi59/mammography-multiobjective-optimization.git
+cd mammography-multiobjective-optimization
+
+# Install dependencies and package
 pip install -r requirements.txt
+pip install -e .
 ```
+
+The `pip install -e .` command installs the project in editable mode, making all modules (`data`, `models`, `training`, etc.) importable.
+
+**Troubleshooting imports:** If you get `ModuleNotFoundError`, see [IMPORT_FIX.md](IMPORT_FIX.md)
 
 ## Quick Start
 
