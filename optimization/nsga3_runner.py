@@ -3,19 +3,26 @@ NSGA-III optimization runner with logging.
 """
 
 import os
+import sys
 import json
 import pickle
 import numpy as np
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
+
+# Add project root to path for imports
+project_root = str(Path(__file__).parent.parent.absolute())
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from pymoo.algorithms.moo.nsga3 import NSGA3
 from pymoo.optimize import minimize
 from pymoo.util.ref_dirs import get_reference_directions
 from pymoo.core.result import Result
 from pymoo.core.callback import Callback
 import config
-from .problem import BreastCancerOptimizationProblem
+from optimization.problem import BreastCancerOptimizationProblem
 
 
 class CheckpointCallback(Callback):
