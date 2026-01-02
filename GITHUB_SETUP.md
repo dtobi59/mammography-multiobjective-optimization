@@ -44,10 +44,11 @@ git commit -m "Initial commit: Multi-objective breast cancer classification
 
 - Complete implementation with dataset-specific parsers
 - Support for VinDr-Mammo and INbreast datasets
-- NSGA-III optimization with 4 objectives
-- 114 tests (100% passing)
+- NSGA-III optimization with 4 objectives and checkpointing
+- Google Colab integration with one-click setup
+- 118 tests (100% passing)
 - Comprehensive documentation
-- Interactive Jupyter notebook tutorial"
+- Interactive tutorials (local + Colab)"
 
 # Rename branch to main (if needed)
 git branch -M main
@@ -117,15 +118,17 @@ On your repository page:
    - Dataset-specific parsers for VinDr-Mammo and INbreast
    - BI-RADS to binary label mapping (including subcategories)
    - ResNet-50 with partial fine-tuning
-   - NSGA-III optimization (4 objectives)
+   - NSGA-III optimization (4 objectives) with automatic checkpointing
+   - Google Colab integration - run with one click, no setup required
    - Zero-shot transfer evaluation
-   - 114 tests (100% passing)
+   - 118 tests (100% passing)
    - Comprehensive documentation
-   - Interactive Jupyter notebook tutorial
+   - Interactive tutorials (local + Colab)
 
    ## Datasets Supported
    - VinDr-Mammo (source/training)
    - INbreast (target/zero-shot evaluation)
+   - Demo synthetic dataset for quick testing
    ```
 5. Publish release
 

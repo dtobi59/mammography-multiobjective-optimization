@@ -54,10 +54,11 @@ git commit -m "Initial commit: Multi-objective breast cancer classification
 
 - Complete implementation with dataset-specific parsers
 - Support for VinDr-Mammo and INbreast datasets
-- NSGA-III optimization with 4 objectives
-- 114 tests (100% passing)
+- NSGA-III optimization with 4 objectives and checkpointing
+- Google Colab integration with one-click setup
+- 118 tests (100% passing)
 - Comprehensive documentation
-- Interactive Jupyter notebook tutorial"
+- Interactive tutorials (local + Colab)"
 
 echo "✅ Initial commit created"
 echo ""

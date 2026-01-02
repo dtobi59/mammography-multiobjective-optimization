@@ -4,11 +4,45 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/dtobi59/mammography-multiobjective-optimization/blob/main/colab_tutorial.ipynb)
 
 Research-grade implementation of multi-objective hyperparameter optimization for CNN-based breast cancer classification under dataset shift.
 
 **Author:** David ([@dtobi59](https://github.com/dtobi59))
 **License:** MIT
+
+---
+
+## 🚀 Quick Start Options
+
+### Option 1: Run on Google Colab (Recommended for Quick Start)
+
+**No installation needed! Run with free GPU in your browser.**
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/dtobi59/mammography-multiobjective-optimization/blob/main/colab_tutorial.ipynb)
+
+Click the badge above and run all cells. The notebook includes:
+- Automatic environment setup
+- Demo dataset generation
+- Complete optimization workflow
+- Result visualization
+- Ready in ~10 minutes!
+
+See [COLAB_SETUP.md](COLAB_SETUP.md) for detailed Colab instructions.
+
+### Option 2: Run Locally
+
+Clone and install on your local machine with GPU.
+
+```bash
+git clone https://github.com/dtobi59/mammography-multiobjective-optimization.git
+cd mammography-multiobjective-optimization
+pip install -r requirements.txt
+```
+
+See installation instructions below for details.
+
+---
 
 ## Overview
 
@@ -247,6 +281,42 @@ Output files:
 - `pareto_hyperparameters_[timestamp].npy`: Hyperparameter values (5 x N array)
 - `metadata_[timestamp].json`: Optimization metadata
 - `result_[timestamp].pkl`: Full pymoo Result object
+
+#### Optimization Checkpoints
+
+The optimization automatically saves checkpoints during execution:
+
+```python
+from optimization.nsga3_runner import NSGA3Runner
+
+runner = NSGA3Runner(
+    train_metadata=train_metadata,
+    val_metadata=val_metadata,
+    image_dir=image_dir,
+    save_frequency=5  # Save every 5 generations
+)
+
+# Run optimization
+result = runner.run()
+
+# List all checkpoints
+checkpoints = runner.list_checkpoints()
+
+# Load a specific checkpoint
+checkpoint = runner.load_checkpoint(checkpoints[0])
+
+# Get Pareto front from checkpoint
+pareto_df = runner.get_pareto_front_from_checkpoint(checkpoints[-1])
+```
+
+Checkpoint files are saved to `./optimization_results/optimization_checkpoints/`:
+- `checkpoint_gen_XXXX.pkl`: Algorithm state for generation XXXX
+- `pareto_gen_XXXX.csv`: Current Pareto front at generation XXXX
+
+These checkpoints allow you to:
+- Monitor optimization progress during long runs
+- Analyze how the Pareto front evolves over generations
+- Recover from interruptions (algorithm state is preserved)
 
 ### 2. Evaluate on Source Validation Set
 

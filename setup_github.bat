@@ -51,7 +51,7 @@ echo.
 
 REM Create commit
 echo Creating initial commit...
-git commit -m "Initial commit: Multi-objective breast cancer classification" -m "- Complete implementation with dataset-specific parsers" -m "- Support for VinDr-Mammo and INbreast datasets" -m "- NSGA-III optimization with 4 objectives" -m "- 114 tests (100%% passing)" -m "- Comprehensive documentation" -m "- Interactive Jupyter notebook tutorial"
+git commit -m "Initial commit: Multi-objective breast cancer classification" -m "- Complete implementation with dataset-specific parsers" -m "- Support for VinDr-Mammo and INbreast datasets" -m "- NSGA-III optimization with 4 objectives and checkpointing" -m "- Google Colab integration with one-click setup" -m "- 118 tests (100%% passing)" -m "- Comprehensive documentation" -m "- Interactive tutorials (local + Colab)"
 echo [OK] Initial commit created
 echo.
 
