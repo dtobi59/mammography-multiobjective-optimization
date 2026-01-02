@@ -2,20 +2,19 @@
 Evaluation on source validation set (VinDr-Mammo).
 """
 
-import os
+# MUST BE FIRST - Fix imports
 import sys
+from pathlib import Path
+_root = str(Path(__file__).parent.parent.absolute())
+if _root not in sys.path:
+    sys.path.insert(0, _root)
+
+import os
 import json
 import torch
 import numpy as np
 import pandas as pd
-from pathlib import Path
 from typing import Dict, Tuple
-
-# Add project root to path for imports
-project_root = str(Path(__file__).parent.parent.absolute())
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 from models.resnet import ResNet50WithPartialFineTuning
 from data.dataset import create_dataloaders, get_base_transform, MammographyDataset
 from training.metrics import (

@@ -2,20 +2,18 @@
 pymoo Problem definition for multi-objective hyperparameter optimization.
 """
 
-import os
+# MUST BE FIRST - Fix imports
 import sys
+from pathlib import Path
+_root = str(Path(__file__).parent.parent.absolute())
+if _root not in sys.path:
+    sys.path.insert(0, _root)
+
 import numpy as np
 import torch
 import pandas as pd
-from pathlib import Path
 from pymoo.core.problem import Problem
 from typing import Dict
-
-# Add project root to path for imports
-project_root = str(Path(__file__).parent.parent.absolute())
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 import config
 from utils.seed import set_all_seeds
 from models.resnet import ResNet50WithPartialFineTuning
