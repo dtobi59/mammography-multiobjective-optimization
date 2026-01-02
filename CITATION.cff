@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "David"
+    given-names: ""
+    orcid: ""
+title: "Multi-Objective Hyperparameter Optimization for Breast Cancer Classification under Dataset Shift"
+version: 1.0.0
+date-released: 2026-01-02
+url: "https://github.com/dtobi59/mammography-multiobjective-optimization"
+repository-code: "https://github.com/dtobi59/mammography-multiobjective-optimization"
+keywords:
+  - "breast cancer"
+  - "mammography"
+  - "deep learning"
+  - "multi-objective optimization"
+  - "NSGA-III"
+  - "domain shift"
+  - "ResNet"
+  - "medical imaging"
+license: MIT
+abstract: "Research-grade implementation of multi-objective hyperparameter optimization for CNN-based breast cancer classification under dataset shift using NSGA-III. Optimizes 4 objectives (PR-AUC, AUROC, Brier score, robustness) on VinDr-Mammo with zero-shot evaluation on INbreast."
