@@ -156,7 +156,7 @@ if __name__ == "__main__":
 
     # Load checkpoint
     print(f"Loading checkpoint from {args.checkpoint}")
-    checkpoint = torch.load(args.checkpoint, map_location="cpu")
+    checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
     model.load_state_dict(checkpoint["model_state_dict"])
 
     # Get image directory

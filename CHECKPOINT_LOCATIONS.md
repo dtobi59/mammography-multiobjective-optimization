@@ -156,7 +156,7 @@ model = ResNet50WithPartialFineTuning(
 )
 
 checkpoint_path = "./checkpoints/eval_42/best_checkpoint.pt"
-checkpoint = torch.load(checkpoint_path)
+checkpoint = torch.load(checkpoint_path, weights_only=False)
 model.load_state_dict(checkpoint['model_state_dict'])
 
 print(f"Loaded model from epoch {checkpoint['epoch']}")
