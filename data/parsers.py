@@ -246,7 +246,8 @@ class INbreastParser:
 
     def _parse_csv(self) -> pd.DataFrame:
         """Parse INbreast CSV metadata."""
-        df = pd.read_csv(self.metadata_path)
+        # INbreast CSV uses semicolon as delimiter
+        df = pd.read_csv(self.metadata_path, sep=';')
 
         print(f"Loaded INbreast CSV metadata: {len(df)} images")
 
@@ -255,7 +256,7 @@ class INbreastParser:
         # Image ID - use filename without extension as ID
         if self.filename_col:
             standardized["image_id"] = df[self.filename_col].apply(
-                lambda x: Path(x).stem
+                lambda x: Path(str(x)).stem
             )
         else:
             standardized["image_id"] = df.index.astype(str)

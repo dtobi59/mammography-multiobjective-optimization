@@ -26,14 +26,14 @@ VINDR_CONFIG = {
 
 # INbreast configuration
 INBREAST_CONFIG = {
-    "metadata_file": "metadata.csv",  # Relative to INBREAST_PATH
+    "metadata_file": "INbreast.csv",  # Relative to INBREAST_PATH
     "image_dir": "images",            # Relative to INBREAST_PATH
     "metadata_format": "csv",         # 'csv' or 'xml'
-    "patient_id_col": "patient_id",
-    "laterality_col": "laterality",
-    "view_col": "view",
-    "birads_col": "birads",
-    "filename_col": "file_name",
+    "patient_id_col": "Patient ID",
+    "laterality_col": "Laterality",
+    "view_col": "View",
+    "birads_col": "Bi-Rads",
+    "filename_col": "File Name",
 }
 
 # Dataset configuration
