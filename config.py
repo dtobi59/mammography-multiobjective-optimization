@@ -9,7 +9,7 @@ RANDOM_SEED = 42
 
 # Data paths (to be set by user)
 VINDR_MAMMO_PATH = "/content/drive/MyDrive/kaggle_vindr_data"
-INBREAST_PATH = "path/to/inbreast"
+INBREAST_PATH = "/content/drive/MyDrive/INbreast"
 
 # Dataset-specific configurations
 # VinDr-Mammo configuration
