@@ -13,6 +13,55 @@ from typing import Dict, Tuple
 import config
 
 
+def compute_brier_null(labels: np.ndarray) -> float:
+    """
+    Compute null Brier score (predicting prevalence for all samples).
+
+    The null Brier score is the Brier score achieved by always predicting
+    the prevalence (mean of labels). This serves as a baseline for calibration.
+
+    Formula:
+        Brier_null = mean((prevalence - y_i)^2)
+                   = prevalence * (1 - prevalence)
+
+    Args:
+        labels: Ground truth binary labels, shape (n_samples,)
+
+    Returns:
+        Null Brier score
+    """
+    prevalence = labels.mean()
+    # Equivalent to: np.mean((prevalence - labels) ** 2)
+    return prevalence * (1.0 - prevalence)
+
+
+def compute_scaled_brier(brier: float, labels: np.ndarray) -> float:
+    """
+    Compute Scaled Brier score.
+
+    Scaled Brier = 1 - (Brier / Brier_null)
+
+    Range: (-∞, 1], where:
+    - 1 = perfect calibration (Brier = 0)
+    - 0 = no better than predicting prevalence
+    - negative = worse than predicting prevalence
+
+    Args:
+        brier: Brier score from model predictions
+        labels: Ground truth binary labels
+
+    Returns:
+        Scaled Brier score
+    """
+    brier_null = compute_brier_null(labels)
+
+    # Handle edge case where all labels are the same
+    if brier_null == 0:
+        return 0.0
+
+    return 1.0 - (brier / brier_null)
+
+
 def compute_metrics(
     predictions: np.ndarray,
     labels: np.ndarray,
@@ -29,20 +78,31 @@ def compute_metrics(
         - pr_auc: Precision-Recall AUC
         - auroc: ROC AUC
         - brier: Brier score
+        - brier_null: Null Brier score (baseline)
+        - scaled_brier: Scaled Brier score (1 - Brier/Brier_null)
     """
     # Handle edge cases
     if len(np.unique(labels)) < 2:
         # Only one class present, cannot compute PR-AUC and AUROC
+        brier = brier_score_loss(labels, predictions)
         return {
             "pr_auc": 0.0,
             "auroc": 0.5,
-            "brier": brier_score_loss(labels, predictions),
+            "brier": brier,
+            "brier_null": 0.0,
+            "scaled_brier": 0.0,
         }
+
+    brier = brier_score_loss(labels, predictions)
+    brier_null = compute_brier_null(labels)
+    scaled_brier = compute_scaled_brier(brier, labels)
 
     metrics = {
         "pr_auc": average_precision_score(labels, predictions),
         "auroc": roc_auc_score(labels, predictions),
-        "brier": brier_score_loss(labels, predictions),
+        "brier": brier,
+        "brier_null": brier_null,
+        "scaled_brier": scaled_brier,
     }
 
     return metrics

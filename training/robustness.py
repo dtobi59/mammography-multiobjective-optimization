@@ -44,12 +44,15 @@ class RobustnessEvaluator:
     @torch.no_grad()
     def evaluate(self) -> float:
         """
-        Evaluate robustness degradation.
+        Evaluate robustness degradation with deterministic perturbations.
 
         Computes:
         - PR-AUC under standard inference
         - PR-AUC under perturbed inference
         - Robustness degradation R = PR-AUC_standard - PR-AUC_perturbed
+
+        Perturbations are deterministic per image_id (derived from hash(image_id))
+        to ensure reproducibility across evaluations.
 
         Returns:
             Robustness degradation (lower is better)
@@ -65,10 +68,10 @@ class RobustnessEvaluator:
             images_standard = images.to(self.device)
             preds_standard = self.model(images_standard).cpu().numpy()
 
-            # Perturbed inference
+            # Perturbed inference with deterministic seed per image_id
             images_perturbed = torch.stack([
-                self.perturbation(img, seed=config.RANDOM_SEED + i)
-                for i, img in enumerate(images)
+                self.perturbation(img, image_id=img_id)
+                for img, img_id in zip(images, image_ids)
             ]).to(self.device)
             preds_perturbed = self.model(images_perturbed).cpu().numpy()
 

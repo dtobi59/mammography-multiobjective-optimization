@@ -436,21 +436,34 @@ if __name__ == "__main__":
     from pathlib import Path
 
     # Load VinDr-Mammo metadata using dataset-specific parser
-    print("Loading VinDr-Mammo metadata...")
+    print("=" * 80)
+    print("LOADING VINDR-MAMMO DATASET")
+    print("=" * 80)
     vindr_metadata = load_metadata(
         dataset_name="vindr",
         dataset_path=config.VINDR_MAMMO_PATH,
         dataset_config=config.VINDR_CONFIG
     )
+    print(f"Loaded {len(vindr_metadata)} images from VinDr-Mammo")
+    print(f"  Patients: {vindr_metadata['patient_id'].nunique()}")
+    print(f"  Breasts: {vindr_metadata['breast_id'].nunique()}")
+    print(f"  Malignant: {(vindr_metadata['label'] == 1).sum()}")
+    print(f"  Benign: {(vindr_metadata['label'] == 0).sum()}")
+    print("=" * 80)
+    print()
 
-    # Create train/val split (patient-wise)
-    from data.dataset import create_train_val_split
-    train_metadata, val_metadata = create_train_val_split(vindr_metadata)
-
-    print(f"Train samples: {len(train_metadata)}")
-    print(f"Validation samples: {len(val_metadata)}")
-    print(f"Unique patients - Train: {train_metadata['patient_id'].nunique()}, "
-          f"Val: {val_metadata['patient_id'].nunique()}")
+    # Create stratified subsample (patient-wise split + stratified sampling)
+    from data.dataset import create_stratified_subsample
+    train_metadata, val_metadata, manifest_path = create_stratified_subsample(
+        metadata=vindr_metadata,
+        target_total=1000,
+        target_malignant=250,
+        target_benign=750,
+        train_ratio=config.TRAIN_VAL_SPLIT,
+        random_seed=config.RANDOM_SEED,
+        output_dir="./manifests",
+        exclude_birads_3=True,
+    )
 
     # Create runner
     image_dir = str(Path(config.VINDR_MAMMO_PATH) / config.VINDR_CONFIG["image_dir"])
@@ -463,6 +476,10 @@ if __name__ == "__main__":
     # Run optimization
     result = runner.run()
 
-    print("\nOptimization complete!")
+    print("\n" + "=" * 80)
+    print("OPTIMIZATION COMPLETE!")
+    print("=" * 80)
     print(f"Pareto front size: {len(result.F)}")
-    print(f"\nResults saved to: {runner.output_dir}")
+    print(f"Results saved to: {runner.output_dir}")
+    print(f"Manifest saved to: {manifest_path}")
+    print("=" * 80)

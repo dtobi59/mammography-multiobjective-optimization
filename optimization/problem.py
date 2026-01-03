@@ -184,10 +184,14 @@ class BreastCancerOptimizationProblem(Problem):
             robustness_degradation,          # Minimize robustness degradation
         ])
 
+        # Log metrics (including Scaled Brier for interpretability, not optimized)
         print(f"Objectives: PR-AUC={best_metrics['pr_auc']:.4f}, "
               f"AUROC={best_metrics['auroc']:.4f}, "
               f"Brier={best_metrics['brier']:.4f}, "
               f"Robustness={robustness_degradation:.4f}")
+        print(f"Additional metrics: "
+              f"Brier_null={best_metrics.get('brier_null', 0.0):.4f}, "
+              f"Scaled Brier={best_metrics.get('scaled_brier', 0.0):.4f}")
 
         self.evaluation_counter += 1
 

@@ -133,6 +133,7 @@ class Trainer:
             "val_pr_auc": [],
             "val_auroc": [],
             "val_brier": [],
+            "val_scaled_brier": [],
         }
 
         self.best_checkpoint_path = None
@@ -230,13 +231,15 @@ class Trainer:
             self.history["val_pr_auc"].append(val_metrics["pr_auc"])
             self.history["val_auroc"].append(val_metrics["auroc"])
             self.history["val_brier"].append(val_metrics["brier"])
+            self.history["val_scaled_brier"].append(val_metrics.get("scaled_brier", 0.0))
 
             # Print progress
             print(f"Epoch {epoch + 1}/{self.max_epochs} - "
                   f"Loss: {train_loss:.4f}, "
                   f"Val PR-AUC: {val_metrics['pr_auc']:.4f}, "
                   f"Val AUROC: {val_metrics['auroc']:.4f}, "
-                  f"Val Brier: {val_metrics['brier']:.4f}")
+                  f"Val Brier: {val_metrics['brier']:.4f}, "
+                  f"Val Scaled Brier: {val_metrics.get('scaled_brier', 0.0):.4f}")
 
             # Save checkpoint if best so far
             val_pr_auc = val_metrics["pr_auc"]
@@ -263,6 +266,7 @@ class Trainer:
             "pr_auc": self.history["val_pr_auc"][best_epoch],
             "auroc": self.history["val_auroc"][best_epoch],
             "brier": self.history["val_brier"][best_epoch],
+            "scaled_brier": self.history["val_scaled_brier"][best_epoch],
         }
 
         return best_metrics

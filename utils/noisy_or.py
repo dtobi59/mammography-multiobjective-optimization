@@ -28,12 +28,19 @@ def aggregate_to_breast_level(
     metadata: pd.DataFrame
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Aggregate image-level predictions to breast-level using Noisy OR.
+    Aggregate image-level predictions to breast-level using generalized Noisy OR.
+
+    Generalized Noisy OR formula for m images:
+        p_breast = 1 - ∏_{j=1}^{m} (1 - p_j)
+
+    Special cases:
+        - m = 1: p_breast = p_1 (single view)
+        - m = 2: p_breast = 1 - (1 - p_1)(1 - p_2) (standard Noisy OR)
+        - m > 2: generalized formula applies
 
     Args:
         image_predictions: Dictionary mapping image_id to predicted probability
         metadata: DataFrame with columns: image_id, patient_id, breast_id, view, label
-                  view should be 'CC' or 'MLO'
                   breast_id uniquely identifies each breast
                   label is the breast-level ground truth
 
@@ -49,25 +56,23 @@ def aggregate_to_breast_level(
     breast_labels = []
 
     for breast_id, group in breast_groups:
-        # Get predictions for CC and MLO views
-        cc_views = group[group["view"] == "CC"]
-        mlo_views = group[group["view"] == "MLO"]
+        # Collect all available image predictions for this breast
+        image_probs = []
+        for img_id in group["image_id"]:
+            if img_id in image_predictions:
+                image_probs.append(image_predictions[img_id])
 
-        # Handle cases where views might be missing (use 0 probability)
-        if len(cc_views) == 0:
-            p_cc = 0.0
+        # Apply generalized Noisy OR
+        if len(image_probs) == 0:
+            # No predictions available, default to 0
+            breast_prob = 0.0
+        elif len(image_probs) == 1:
+            # Single view: p_breast = p_1
+            breast_prob = image_probs[0]
         else:
-            # If multiple CC views, take max probability (most suspicious)
-            p_cc = max([image_predictions.get(img_id, 0.0) for img_id in cc_views["image_id"]])
+            # Multiple views: p_breast = 1 - ∏(1 - p_j)
+            breast_prob = 1.0 - np.prod([1.0 - p for p in image_probs])
 
-        if len(mlo_views) == 0:
-            p_mlo = 0.0
-        else:
-            # If multiple MLO views, take max probability (most suspicious)
-            p_mlo = max([image_predictions.get(img_id, 0.0) for img_id in mlo_views["image_id"]])
-
-        # Apply Noisy OR
-        breast_prob = noisy_or_aggregation(p_cc, p_mlo)
         breast_predictions.append(breast_prob)
 
         # Ground truth label (same for all views of the same breast)

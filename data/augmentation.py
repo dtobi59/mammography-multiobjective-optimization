@@ -101,13 +101,14 @@ class RobustnessPerturbation:
         self.contrast_delta = contrast_delta
         self.noise_std = noise_std
 
-    def __call__(self, image: torch.Tensor, seed: Optional[int] = None) -> torch.Tensor:
+    def __call__(self, image: torch.Tensor, image_id: Optional[str] = None, seed: Optional[int] = None) -> torch.Tensor:
         """
-        Apply fixed perturbation to image.
+        Apply fixed perturbation to image with deterministic seed derived from image_id.
 
         Args:
             image: Input image tensor, shape (C, H, W), values in [0, 1]
-            seed: Optional seed for noise reproducibility
+            image_id: Image identifier used to derive deterministic seed (preferred)
+            seed: Optional explicit seed (deprecated, use image_id instead)
 
         Returns:
             Perturbed image tensor, shape (C, H, W), values clipped to [0, 1]
@@ -116,13 +117,24 @@ class RobustnessPerturbation:
         image = TF.adjust_brightness(image, 1.0 + self.brightness_delta)
         image = TF.adjust_contrast(image, 1.0 + self.contrast_delta)
 
-        # Add Gaussian noise with optional seed
+        # Add Gaussian noise with deterministic seed
         if self.noise_std > 0:
-            if seed is not None:
-                generator = torch.Generator().manual_seed(seed)
+            # Derive seed from image_id for reproducibility
+            if image_id is not None:
+                # Use hash of image_id to get deterministic seed
+                # Modulo 2^31 - 1 to stay within valid range for torch.Generator
+                seed_value = abs(hash(image_id)) % (2**31 - 1)
+            elif seed is not None:
+                seed_value = seed
+            else:
+                seed_value = None
+
+            if seed_value is not None:
+                generator = torch.Generator().manual_seed(seed_value)
                 noise = torch.randn(image.shape, generator=generator, dtype=image.dtype, device=image.device) * self.noise_std
             else:
                 noise = torch.randn_like(image) * self.noise_std
+
             image = image + noise
 
         # Clip to valid range [0, 1]
