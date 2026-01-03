@@ -14,7 +14,7 @@ INBREAST_PATH = "path/to/inbreast"
 # Dataset-specific configurations
 # VinDr-Mammo configuration
 VINDR_CONFIG = {
-    "metadata_file": "metadata.csv",  # Relative to VINDR_MAMMO_PATH
+    "metadata_file": "vindr_detection_v1_folds.csv",  # Relative to VINDR_MAMMO_PATH
     "image_dir": "images",            # Relative to VINDR_MAMMO_PATH
     "image_id_col": "image_id",
     "patient_id_col": "study_id",
