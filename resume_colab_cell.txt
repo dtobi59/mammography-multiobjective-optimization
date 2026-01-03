@@ -1,0 +1,89 @@
+# ============================================================================
+# SECTION 5b: RESUME FROM CHECKPOINT (Run this if session timed out)
+# ============================================================================
+
+# This cell helps you resume optimization after a timeout or disconnection
+
+import sys
+import os
+from pathlib import Path
+
+# Ensure project is in path
+if os.getcwd() not in sys.path:
+    sys.path.insert(0, os.getcwd())
+
+from optimization.nsga3_runner import NSGA3Runner
+import config
+
+print("=" * 80)
+print("RESUME OPTIMIZATION FROM CHECKPOINT")
+print("=" * 80)
+
+# Check if we have the data loaded
+try:
+    print(f"\n✓ Training data: {len(train_metadata)} samples")
+    print(f"✓ Validation data: {len(val_metadata)} samples")
+except NameError:
+    print("\n⚠ Data not loaded! Please run the data loading cells first (Section 4)")
+    print("  Then come back to this cell.")
+    raise
+
+# Setup runner with Google Drive paths
+print("\nSetting up optimization runner...")
+image_dir = str(Path(config.VINDR_MAMMO_PATH) / config.VINDR_CONFIG["image_dir"])
+runner = NSGA3Runner(
+    train_metadata=train_metadata,
+    val_metadata=val_metadata,
+    image_dir=image_dir,
+    output_dir=OUTPUT_DIR,          # From cell-14 (Google Drive)
+    checkpoint_dir=CHECKPOINT_DIR,  # From cell-14 (Google Drive)
+    save_frequency=1
+)
+
+# List available checkpoints
+print("\nLooking for checkpoints in Google Drive...")
+checkpoints = runner.list_checkpoints()
+
+if not checkpoints:
+    print("\n❌ No checkpoints found!")
+    print(f"   Checked: {OUTPUT_DIR}/optimization_checkpoints/")
+    print("\n   Starting optimization from scratch instead...")
+    result = runner.run()
+else:
+    print(f"\n✓ Found {len(checkpoints)} checkpoint(s)")
+
+    # Show last 5 checkpoints
+    print("\nRecent checkpoints:")
+    for i, ckpt in enumerate(checkpoints[-5:], 1):
+        print(f"  {i}. {ckpt.name}")
+
+    # Get latest checkpoint
+    latest_checkpoint = checkpoints[-1]
+    print(f"\n📂 Latest checkpoint: {latest_checkpoint.name}")
+
+    # Load checkpoint info
+    checkpoint_data = runner.load_checkpoint(latest_checkpoint)
+
+    print("\n" + "=" * 80)
+    print("RESUMING FROM CHECKPOINT")
+    print("=" * 80)
+    print(f"Generation: {checkpoint_data['generation']}")
+    print(f"Created at: {checkpoint_data['timestamp']}")
+    print(f"Time elapsed: {checkpoint_data['elapsed_time']:.2f}s")
+    print("=" * 80)
+
+    # Resume optimization
+    print("\n🚀 Resuming optimization...")
+    print(f"   Checkpoints will continue saving to: {CHECKPOINT_DIR}")
+    print(f"   Results will save to: {OUTPUT_DIR}")
+    print("\n" + "=" * 80 + "\n")
+
+    result = runner.run(resume_from=str(latest_checkpoint))
+
+    print("\n" + "=" * 80)
+    print("OPTIMIZATION COMPLETE!")
+    print("=" * 80)
+    print(f"Pareto front size: {len(result.F)}")
+    print(f"Results saved to: {runner.output_dir}")
+    print("\n✓ All checkpoints and results are in Google Drive!")
+    print("=" * 80)
