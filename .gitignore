@@ -36,12 +36,22 @@ ENV/
 *.ckpt
 
 # Data directories (don't commit large datasets)
-data/
+# BUT DO commit Python code files!
 datasets/
 vindr_mammo/
 inbreast/
+demo_data/
+test_*_temp/
 */images/
-*/metadata.csv
+*.dicom
+*.dcm
+*.nii
+*.nii.gz
+
+# Ignore large result files but allow small test CSVs
+pareto_solutions_*.csv
+pareto_objectives_*.npy
+pareto_hyperparameters_*.npy
 
 # Model checkpoints
 checkpoints/
