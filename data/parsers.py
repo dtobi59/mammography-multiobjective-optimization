@@ -128,8 +128,11 @@ class VinDrMammoParser:
         # Standardize column names
         standardized = pd.DataFrame()
 
-        # Image ID
-        standardized["image_id"] = df[self.image_id_col].astype(str)
+        # Image ID - strip extension if present (VinDr CSV includes .png in image_id)
+        image_ids = df[self.image_id_col].astype(str)
+        standardized["image_id"] = image_ids.apply(
+            lambda x: x.replace(self.image_extension, "") if x.endswith(self.image_extension) else x
+        )
 
         # Patient ID
         standardized["patient_id"] = df[self.patient_id_col].astype(str)
@@ -165,9 +168,9 @@ class VinDrMammoParser:
         standardized = standardized.iloc[valid_indices].reset_index(drop=True)
         standardized["label"] = labels
 
-        # Image path
+        # Image path - VinDr structure: patient_id/image_id.png
         standardized["image_path"] = (
-            standardized["image_id"] + self.image_extension
+            standardized["patient_id"] + "/" + standardized["image_id"] + self.image_extension
         )
 
         print(f"Valid images after BI-RADS filtering: {len(standardized)}")
