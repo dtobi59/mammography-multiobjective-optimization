@@ -1,0 +1,65 @@
+# Restart Optimization with A100 Optimizations
+# Copy this into a new Colab cell
+
+# ============================================================================
+# CLEAN START WITH A100 OPTIMIZATION
+# ============================================================================
+
+import os
+import shutil
+from datetime import datetime
+
+# 1. Backup old results (just in case)
+old_dir = "/content/drive/MyDrive/vindr_optimization"
+backup_dir = f"/content/drive/MyDrive/vindr_optimization_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+if os.path.exists(old_dir):
+    print(f"Backing up old results to: {backup_dir}")
+    shutil.move(old_dir, backup_dir)
+    print(f"✓ Backup complete")
+else:
+    print("No existing results to backup")
+
+# 2. Apply A100 optimizations
+import config
+import torch
+
+config.BATCH_SIZE = 64  # 4x faster! Use 128 for 8x faster
+
+# Enable A100 optimizations
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+
+# Optional: Learning rate scaling (recommended)
+lr_scale = (config.BATCH_SIZE / 16) ** 0.5  # sqrt scaling
+old_lr = config.HYPERPARAMETER_BOUNDS["learning_rate"]
+config.HYPERPARAMETER_BOUNDS["learning_rate"] = (
+    old_lr[0] * lr_scale,
+    old_lr[1] * lr_scale
+)
+
+print("\n" + "=" * 80)
+print("A100 OPTIMIZATIONS APPLIED")
+print("=" * 80)
+print(f"Batch size: 16 → {config.BATCH_SIZE} ({config.BATCH_SIZE/16:.0f}x speedup)")
+print(f"Learning rate scaled: {old_lr} → {config.HYPERPARAMETER_BOUNDS['learning_rate']}")
+print(f"TF32 enabled: True")
+print(f"\nExpected time per generation: ~{24 * 7 / 60:.1f} hours")
+print(f"Expected total time (50 gen): ~{24 * 50 * 7 / 60 / 24:.1f} days")
+print(f"Time saved vs batch_size=16: ~19 days! 🚀")
+print("=" * 80)
+
+# 3. Setup new directories
+CHECKPOINT_DIR = "/content/drive/MyDrive/vindr_optimization/checkpoints"
+OUTPUT_DIR = "/content/drive/MyDrive/vindr_optimization/results"
+
+os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+print(f"\n✓ New optimization directories created")
+print(f"  Checkpoints: {CHECKPOINT_DIR}")
+print(f"  Results: {OUTPUT_DIR}")
+
+# 4. Now run your optimization (Section 5a code)
+print("\n✓ Ready to start optimized run!")
+print("  Run the optimization cell (Section 5a) now")
