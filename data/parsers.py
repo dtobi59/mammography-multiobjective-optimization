@@ -34,6 +34,10 @@ def birads_to_binary_label(birads: str) -> int:
     # Normalize to uppercase and remove spaces
     birads = str(birads).upper().strip()
 
+    # Remove "BI-RADS" prefix if present (e.g., "BI-RADS 3" -> "3")
+    if birads.startswith("BI-RADS"):
+        birads = birads.replace("BI-RADS", "").strip()
+
     # Benign categories
     if birads in ["1", "2", "3"]:
         return 0
