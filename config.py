@@ -8,7 +8,7 @@ import numpy as np
 RANDOM_SEED = 42
 
 # Data paths (to be set by user)
-VINDR_MAMMO_PATH = "path/to/vindr_mammo"
+VINDR_MAMMO_PATH = "/content/drive/MyDrive/kaggle_vindr_data"
 INBREAST_PATH = "path/to/inbreast"
 
 # Dataset-specific configurations
