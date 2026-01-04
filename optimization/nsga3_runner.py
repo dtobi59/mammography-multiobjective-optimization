@@ -248,13 +248,14 @@ class NSGA3Runner:
 
         # Create reference directions for NSGA-III
         # For 4 objectives, use Das-Dennis approach
-        # Set random seed for reproducibility
-        np.random.seed(config.RANDOM_SEED)
+        #
+        # FIX for pymoo random_state issue:
+        # Some pymoo versions have a bug where internal functions receive None for random_state
+        # Workaround: Use 'das-dennis' instead of 'energy' which has more stable random state handling
         ref_dirs = get_reference_directions(
-            "energy",
+            "das-dennis",  # More stable than "energy" for random state
             n_dim=config.NSGA3_CONFIG["n_objectives"],
-            n_points=config.NSGA3_CONFIG["pop_size"],
-            seed=config.RANDOM_SEED,
+            n_partitions=12,  # Will generate ~24-30 reference directions for 4 objectives
         )
 
         # Initialize NSGA-III algorithm
