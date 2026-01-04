@@ -66,18 +66,25 @@ class CheckpointCallback(Callback):
         """
         checkpoint_path = self.checkpoint_dir / f"checkpoint_gen_{gen:04d}.pkl"
 
+        # Extract only picklable data from algorithm (not the algorithm object itself)
+        # The pymoo algorithm contains unpicklable decorators, so we extract key state
         checkpoint = {
             "generation": gen,
-            "algorithm": algorithm,
             "timestamp": datetime.now().isoformat(),
             "elapsed_time": (datetime.now() - self.start_time).total_seconds(),
+            # Save population state (picklable numpy arrays)
+            "pop_X": algorithm.pop.get("X").copy() if algorithm.pop is not None else None,
+            "pop_F": algorithm.pop.get("F").copy() if algorithm.pop is not None else None,
+            # Save Pareto optimal solutions (picklable numpy arrays)
+            "opt_X": algorithm.opt.get("X").copy() if algorithm.opt is not None and len(algorithm.opt) > 0 else None,
+            "opt_F": algorithm.opt.get("F").copy() if algorithm.opt is not None and len(algorithm.opt) > 0 else None,
         }
 
         # Save checkpoint
         with open(checkpoint_path, "wb") as f:
             pickle.dump(checkpoint, f)
 
-        # Save current Pareto front
+        # Save current Pareto front as CSV (human-readable)
         if algorithm.opt is not None and len(algorithm.opt) > 0:
             pareto_df = self._create_pareto_dataframe(algorithm.opt.get("X"), algorithm.opt.get("F"))
             pareto_path = self.checkpoint_dir / f"pareto_gen_{gen:04d}.csv"
