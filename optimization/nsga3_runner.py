@@ -248,13 +248,17 @@ class NSGA3Runner:
 
         # Create reference directions for NSGA-III
         # For 4 objectives, use Das-Dennis approach
+        # Set random seed for reproducibility
+        np.random.seed(config.RANDOM_SEED)
         ref_dirs = get_reference_directions(
             "energy",
             n_dim=config.NSGA3_CONFIG["n_objectives"],
             n_points=config.NSGA3_CONFIG["pop_size"],
+            seed=config.RANDOM_SEED,
         )
 
         # Initialize NSGA-III algorithm
+        # Note: seed will be set by minimize() function
         algorithm = NSGA3(
             ref_dirs=ref_dirs,
             pop_size=config.NSGA3_CONFIG["pop_size"],
