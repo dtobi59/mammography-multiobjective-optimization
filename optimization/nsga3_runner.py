@@ -351,9 +351,16 @@ class NSGA3Runner:
         with open(os.path.join(self.output_dir, f"metadata_{timestamp}.json"), "w") as f:
             json.dump(metadata, f, indent=2)
 
-        # Save full result object
+        # Save result data (extract picklable arrays, not the full Result object)
+        # The pymoo Result object contains unpicklable decorators
+        result_data = {
+            "X": result.X.copy() if result.X is not None else None,  # Pareto solutions
+            "F": result.F.copy() if result.F is not None else None,  # Pareto objectives
+            "timestamp": timestamp,
+            "duration_seconds": duration,
+        }
         with open(os.path.join(self.output_dir, f"result_{timestamp}.pkl"), "wb") as f:
-            pickle.dump(result, f)
+            pickle.dump(result_data, f)
 
         print(f"Results saved to {self.output_dir}")
 
