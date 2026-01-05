@@ -75,7 +75,7 @@ if not checkpoint_path.exists():
     raise FileNotFoundError(f"Checkpoint not found for solution {solution_id}")
 
 print(f"Loading checkpoint: {checkpoint_path}")
-checkpoint = torch.load(checkpoint_path, map_location='cpu')
+checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
 print(f"[OK] Checkpoint loaded (epoch {checkpoint.get('epoch', 'unknown')})")
 print()
 
