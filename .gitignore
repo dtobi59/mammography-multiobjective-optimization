@@ -102,3 +102,8 @@ Thumbs.db
 config_local.py
 *.pkl
 *.npy
+
+# Claude Code local settings
+.claude/settings.local.json
+
+CLAUDE.md
