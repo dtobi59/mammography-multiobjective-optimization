@@ -75,8 +75,9 @@ def aggregate_to_breast_level(
 
         breast_predictions.append(breast_prob)
 
-        # Ground truth label (same for all views of the same breast)
-        breast_label = group["label"].iloc[0]
+        # Ground truth label: max across all views (if ANY view is positive, breast is positive)
+        # This follows clinical logic and handles cases where views may have different assessments
+        breast_label = int(group["label"].max())
         breast_labels.append(breast_label)
 
     return np.array(breast_predictions), np.array(breast_labels)
