@@ -23,15 +23,17 @@ Target Dataset (INbreast) - Breast Level:
 
 ## Solution
 
-### Implemented Fix (data/parsers.py:267-303)
+### Implemented Fix (data/parsers.py:267-337)
 
-When patient IDs are masked ("removed" or "masked"), the parser now infers patient groupings from file number proximity:
+When patient IDs are masked ("removed" or "masked"), the parser now infers patient groupings from **acquisition date** + file number proximity:
 
 1. **Detection**: Check if all patient IDs are "removed" or "masked"
-2. **File Number Grouping**:
-   - Sort images by file number
-   - Assign new patient group when gap > 500 between consecutive files
-   - Typical mammography has 4 images per patient (2 breasts × 2 views)
+2. **Patient Grouping Strategy**:
+   - **Primary**: Sort by acquisition date, then file number
+   - Start new patient group when:
+     - Acquisition date changes, OR
+     - File number gap > 100 (within same date)
+   - **Fallback** (if no date): File number gaps > 100
 3. **Breast ID Generation**: Use inferred patient ID + laterality
 
 ### Example
@@ -49,44 +51,57 @@ patient_0001_R    2 images
 patient_0001_L    2 images
 patient_0002_R    2 images
 ...
-Total: 36 breasts (11 benign, 25 malignant)
+Total: 129 breasts (84 benign, 45 malignant) from 70 patients
 ```
 
 ### Code Changes
 
 **File**: `data/parsers.py`
 **Method**: `INbreastParser._parse_csv()`
-**Lines**: 267-303
+**Lines**: 267-337
 
 ```python
 # Check if all patient IDs are "removed" or similar placeholder
 if (patient_ids_raw == "removed").all() or (patient_ids_raw == "masked").all():
-    print("Warning: Patient IDs are masked. Inferring patient groupings from file numbers.")
+    print("Warning: Patient IDs are masked. Inferring patient groupings from acquisition date and file numbers.")
 
-    # Infer patient groups from file number proximity
-    file_numbers = df[self.filename_col].astype(int)
-    sorted_indices = file_numbers.argsort()
-    sorted_files = file_numbers.iloc[sorted_indices].values
+    # Use acquisition date if available
+    if 'Acquisition date' in df.columns:
+        # Sort by acquisition date first, then file number
+        df_sorted = df.sort_values(['Acquisition date', self.filename_col])
 
-    # Assign patient IDs based on gaps in file numbers
-    patient_groups = []
-    current_patient_id = 0
-    prev_file = sorted_files[0]
+        patient_groups = []
+        current_patient_id = 0
+        prev_date = None
+        prev_file = None
 
-    for file_num in sorted_files:
-        # If gap > 500, assume new patient
-        if abs(file_num - prev_file) > 500:
-            current_patient_id += 1
-        patient_groups.append(f"patient_{current_patient_id:04d}")
-        prev_file = file_num
+        for _, row in df_sorted.iterrows():
+            curr_date = row['Acquisition date']
+            curr_file = int(row[self.filename_col])
 
-    # Reorder to match original DataFrame order
-    patient_groups_ordered = [None] * len(df)
-    for i, orig_idx in enumerate(sorted_indices):
-        patient_groups_ordered[orig_idx] = patient_groups[i]
+            # New patient if:
+            # 1. Acquisition date changes, OR
+            # 2. File number gap > 100 (within same date)
+            if prev_date is None:
+                pass  # First row
+            elif curr_date != prev_date:
+                current_patient_id += 1
+            elif abs(curr_file - prev_file) > 100:
+                current_patient_id += 1
 
-    standardized["patient_id"] = patient_groups_ordered
-    print(f"Inferred {current_patient_id + 1} patient groups from file numbers.")
+            patient_groups.append(f"patient_{current_patient_id:04d}")
+            prev_date = curr_date
+            prev_file = curr_file
+
+        # Create mapping back to original order
+        df_sorted['patient_id_temp'] = patient_groups
+        df_with_patient = df.merge(
+            df_sorted[[self.filename_col, 'patient_id_temp']],
+            on=self.filename_col,
+            how='left'
+        )
+        standardized["patient_id"] = df_with_patient['patient_id_temp'].values
+        print(f"Inferred {current_patient_id + 1} patient groups using acquisition date + file number proximity.")
 ```
 
 ## Validation
@@ -100,48 +115,59 @@ python debug_evaluation.py
 
 Expected output:
 ```
-Warning: Patient IDs are masked. Inferring patient groupings from file numbers.
-Inferred 19 patient groups from file numbers.
+Warning: Patient IDs are masked. Inferring patient groupings from acquisition date and file numbers.
+Inferred 70 patient groups using acquisition date + file number proximity.
 
 Breast-level label distribution:
 label
-1    25
-0    11
+0    84
+1    45
 Name: count, dtype: int64
 
-Total breasts: 36
-Malignant breasts: 25
-Benign breasts: 11
+Total breasts: 129
+Malignant breasts: 45
+Benign breasts: 84
 
-Metrics:
-PR-AUC: 0.8257  # Now computed correctly
-AUROC: 0.6145   # Now shows actual performance
-Brier: 0.2812   # Now computed correctly
+Label inconsistency: 18.3% (breasts with mixed labels across views)
+
+Metrics with random predictions:
+PR-AUC: 0.4797  # Now computed correctly
+AUROC: 0.5537   # Close to random (as expected)
+Brier: 0.4865   # Now computed correctly
 ```
 
 ## Impact
 
 - ✅ Fixed breast-level evaluation for INbreast dataset
-- ✅ Both classes now properly represented at breast level
+- ✅ Both classes now properly represented at breast level (84 benign, 45 malignant)
 - ✅ Metrics now accurately reflect model performance
 - ✅ Automated detection and warning when patient IDs are masked
+- ✅ Uses acquisition date to prevent grouping different patients together
+- ✅ Only 18.3% label inconsistency (down from 58.8% with file-only grouping)
 
 ## Limitations
 
-1. **Heuristic Grouping**: File number gaps of >500 used to infer patients
-   - Works for INbreast, may need adjustment for other datasets
+1. **Heuristic Grouping**: Uses acquisition date + file number gaps >100
+   - Works well for INbreast (18.3% label inconsistency)
+   - May need adjustment for datasets with different conventions
    - True patient groupings unknown due to privacy masking
 
-2. **Breast Count**: 36 breasts from 410 images suggests ~18 patients with 2 breasts each
-   - Some patients may have incomplete data (missing views)
+2. **Breast Count**: 129 breasts from 70 patients (avg 1.8 breasts/patient)
+   - Some patients missing left or right breast data
+   - Some breasts have 1-2 views instead of standard 2
    - Cannot verify accuracy without ground truth patient IDs
+
+3. **Label Inconsistency**: 18.3% of breasts have conflicting labels across views
+   - Could indicate imaging quality issues or annotation errors
+   - Max aggregation assumes "if any view shows malignancy, breast is positive"
 
 ## Future Improvements
 
-1. Add configuration option for gap threshold (currently hardcoded to 500)
-2. Use acquisition date + file number for more accurate grouping
+1. Add configuration option for gap threshold (currently hardcoded to 100)
+2. Validate grouping by checking typical mammography patterns (2 breasts, 2 views each)
 3. Add validation warnings if inferred patient groups seem unusual
-4. Consider alternative grouping strategies (e.g., clustering)
+4. Consider alternative grouping strategies (e.g., clustering, Hungarian algorithm)
+5. Use ACR (breast density) as additional grouping signal (should be same for both breasts of a patient)
 
 ## Related Files
 

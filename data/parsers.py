@@ -249,8 +249,16 @@ class INbreastParser:
 
     def _parse_csv(self) -> pd.DataFrame:
         """Parse INbreast CSV metadata."""
-        # INbreast CSV uses semicolon as delimiter
-        df = pd.read_csv(self.metadata_path, sep=';')
+        # INbreast CSV may use semicolon or comma as delimiter - try to auto-detect
+        # First try comma (updated format), fallback to semicolon (original format)
+        try:
+            df = pd.read_csv(self.metadata_path, sep=',')
+            # Verify we got the expected columns
+            if self.patient_id_col not in df.columns:
+                raise ValueError("Patient ID column not found with comma separator")
+        except:
+            # Fallback to semicolon separator
+            df = pd.read_csv(self.metadata_path, sep=';')
 
         print(f"Loaded INbreast CSV metadata: {len(df)} images")
 
@@ -265,40 +273,74 @@ class INbreastParser:
             standardized["image_id"] = df.index.astype(str)
 
         # Patient ID
-        # Fix: If patient IDs are masked/removed, group by file number proximity
+        # Fix: If patient IDs are masked/removed, group by acquisition date + file number proximity
         patient_ids_raw = df[self.patient_id_col].astype(str)
 
         # Check if all patient IDs are "removed" or similar placeholder
         if (patient_ids_raw == "removed").all() or (patient_ids_raw == "masked").all():
-            print("Warning: Patient IDs are masked. Inferring patient groupings from file numbers.")
-            # Infer patient groups from file number proximity
-            # Typical mammography: 4 images per patient (2 breasts × 2 views)
-            # Files close together (within ~100 range) likely belong to same patient
-            file_numbers = df[self.filename_col].astype(int)
+            print("Warning: Patient IDs are masked. Inferring patient groupings from acquisition date and file numbers.")
 
-            # Sort by file number to identify groups
-            sorted_indices = file_numbers.argsort()
-            sorted_files = file_numbers.iloc[sorted_indices].values
+            # Use acquisition date if available
+            if 'Acquisition date' in df.columns:
+                # Sort by acquisition date first, then file number
+                df_sorted = df.sort_values(['Acquisition date', self.filename_col])
 
-            # Assign patient IDs based on gaps in file numbers
-            patient_groups = []
-            current_patient_id = 0
-            prev_file = sorted_files[0]
+                patient_groups = []
+                current_patient_id = 0
+                prev_date = None
+                prev_file = None
 
-            for file_num in sorted_files:
-                # If gap > 500, assume new patient
-                if abs(file_num - prev_file) > 500:
-                    current_patient_id += 1
-                patient_groups.append(f"patient_{current_patient_id:04d}")
-                prev_file = file_num
+                for _, row in df_sorted.iterrows():
+                    curr_date = row['Acquisition date']
+                    curr_file = int(row[self.filename_col])
 
-            # Reorder to match original DataFrame order
-            patient_groups_ordered = [None] * len(df)
-            for i, orig_idx in enumerate(sorted_indices):
-                patient_groups_ordered[orig_idx] = patient_groups[i]
+                    # New patient if:
+                    # 1. Acquisition date changes, OR
+                    # 2. File number gap > 100 (within same date)
+                    if prev_date is None:
+                        pass  # First row
+                    elif curr_date != prev_date:
+                        current_patient_id += 1
+                    elif abs(curr_file - prev_file) > 100:
+                        current_patient_id += 1
 
-            standardized["patient_id"] = patient_groups_ordered
-            print(f"Inferred {current_patient_id + 1} patient groups from file numbers.")
+                    patient_groups.append(f"patient_{current_patient_id:04d}")
+                    prev_date = curr_date
+                    prev_file = curr_file
+
+                # Create mapping back to original order
+                df_sorted['patient_id_temp'] = patient_groups
+                df_with_patient = df.merge(
+                    df_sorted[[self.filename_col, 'patient_id_temp']],
+                    on=self.filename_col,
+                    how='left'
+                )
+                standardized["patient_id"] = df_with_patient['patient_id_temp'].values
+                print(f"Inferred {current_patient_id + 1} patient groups using acquisition date + file number proximity.")
+            else:
+                # Fallback: use file number proximity only (smaller gap threshold)
+                print("Warning: No acquisition date column found. Using file number proximity only.")
+                file_numbers = df[self.filename_col].astype(int)
+                sorted_indices = file_numbers.argsort()
+                sorted_files = file_numbers.iloc[sorted_indices].values
+
+                patient_groups = []
+                current_patient_id = 0
+                prev_file = sorted_files[0]
+
+                for file_num in sorted_files:
+                    # Smaller gap threshold of 100
+                    if abs(file_num - prev_file) > 100:
+                        current_patient_id += 1
+                    patient_groups.append(f"patient_{current_patient_id:04d}")
+                    prev_file = file_num
+
+                patient_groups_ordered = [None] * len(df)
+                for i, orig_idx in enumerate(sorted_indices):
+                    patient_groups_ordered[orig_idx] = patient_groups[i]
+
+                standardized["patient_id"] = patient_groups_ordered
+                print(f"Inferred {current_patient_id + 1} patient groups from file numbers.")
         else:
             standardized["patient_id"] = patient_ids_raw
 
