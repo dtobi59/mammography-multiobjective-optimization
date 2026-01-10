@@ -192,5 +192,54 @@ The evaluation should now show non-zero breast-level metrics.
 
 ---
 
+## Update: Actual Patient IDs Added
+
+The user has updated the INbreast.csv file with actual patient IDs. The parser now:
+
+1. **Auto-detects CSV delimiter** (comma or semicolon)
+2. **Uses actual patient IDs when available** (bypasses heuristic grouping)
+3. **Falls back to heuristic grouping** only when IDs are masked
+
+### Results with Actual Patient IDs
+
+```bash
+python check_label_consistency.py
+```
+
+Output:
+```
+Total patients: 109
+Total breasts: 211 (144 benign, 67 malignant)
+Average breasts per patient: 1.94
+
+Breasts with >1 image: 155
+Breasts with inconsistent labels: 25 (16.1%)
+
+Images per breast distribution:
+1     56  # Single view only
+2    127  # Standard CC + MLO
+3+    28  # Additional views
+```
+
+### Comparison
+
+| Metric | Masked IDs (Heuristic) | Actual Patient IDs |
+|--------|------------------------|-------------------|
+| Patients | 70 (inferred) | 109 (real) |
+| Breasts | 129 | 211 |
+| Benign/Malignant | 84/45 | 144/67 |
+| Label Inconsistency | 18.3% | 16.1% ✅ |
+| Avg Breasts/Patient | ~1.8 | 1.94 |
+
+The actual patient IDs provide:
+- ✅ More complete dataset (211 vs 129 breasts)
+- ✅ Better label consistency (16.1% vs 18.3%)
+- ✅ Ground truth patient groupings
+- ✅ More reliable evaluation metrics
+
+---
+
 **Fixed**: 2026-01-10
-**Git Commit**: TBD (to be committed)
+**Git Commits**:
+- `88516f6` - Initial fix with heuristic grouping
+- `3518bd2` - Updated with CSV delimiter detection and validation scripts
