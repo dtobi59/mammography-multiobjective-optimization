@@ -265,7 +265,42 @@ class INbreastParser:
             standardized["image_id"] = df.index.astype(str)
 
         # Patient ID
-        standardized["patient_id"] = df[self.patient_id_col].astype(str)
+        # Fix: If patient IDs are masked/removed, group by file number proximity
+        patient_ids_raw = df[self.patient_id_col].astype(str)
+
+        # Check if all patient IDs are "removed" or similar placeholder
+        if (patient_ids_raw == "removed").all() or (patient_ids_raw == "masked").all():
+            print("Warning: Patient IDs are masked. Inferring patient groupings from file numbers.")
+            # Infer patient groups from file number proximity
+            # Typical mammography: 4 images per patient (2 breasts × 2 views)
+            # Files close together (within ~100 range) likely belong to same patient
+            file_numbers = df[self.filename_col].astype(int)
+
+            # Sort by file number to identify groups
+            sorted_indices = file_numbers.argsort()
+            sorted_files = file_numbers.iloc[sorted_indices].values
+
+            # Assign patient IDs based on gaps in file numbers
+            patient_groups = []
+            current_patient_id = 0
+            prev_file = sorted_files[0]
+
+            for file_num in sorted_files:
+                # If gap > 500, assume new patient
+                if abs(file_num - prev_file) > 500:
+                    current_patient_id += 1
+                patient_groups.append(f"patient_{current_patient_id:04d}")
+                prev_file = file_num
+
+            # Reorder to match original DataFrame order
+            patient_groups_ordered = [None] * len(df)
+            for i, orig_idx in enumerate(sorted_indices):
+                patient_groups_ordered[orig_idx] = patient_groups[i]
+
+            standardized["patient_id"] = patient_groups_ordered
+            print(f"Inferred {current_patient_id + 1} patient groups from file numbers.")
+        else:
+            standardized["patient_id"] = patient_ids_raw
 
         # Laterality
         if self.laterality_col and self.laterality_col in df.columns:
